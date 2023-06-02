@@ -25,8 +25,8 @@ export default function App() {
             } catch (err) {
                 console.log(err);
             }
-            return {};
         }
+        return {};
     });
     const jobStatusDirtyRef = useRef(false);
     const jobStatusRef = useRef(jobStatusMap);
@@ -549,10 +549,12 @@ function ServiceLauncher({service}) {
 function JobsList() {
     const {jobStatusMap} = useContext(SlivkaJobCacheContext);
 
-    const jobList = Object.values(jobStatusMap).filter((j) => j.status !== 'COMMS_ERR' && j.status !== 'NOT_FOUND');
+    const jobList = Object.values(jobStatusMap || {}).filter((j) => j.status !== 'COMMS_ERR' && j.status !== 'NOT_FOUND');
     jobList.sort((a, b) => -((a.submissionTime || '').localeCompare(b.submissionTime || '')))
     if (jobList.length === 0) {
-        return (<div>No jobs here, oh dear</div>);
+        return (
+            <div>No jobs here.  Select a <Link to="/services">service</Link> to launch.</div>
+        );
     }
 
     return (
@@ -576,7 +578,7 @@ function JobView() {
     const {jobStatusMap, requestJob} = useContext(SlivkaJobCacheContext);
     const {services} = useContext(SlivkaServiceContext);
 
-    const status = jobStatusMap[jobId];
+    const status = (jobStatusMap || {})[jobId];
 
     useEffect(() => {
         if (!status) {
@@ -596,7 +598,7 @@ function JobView() {
     }, [status?.service, services]);
 
 
-    if (!status) {
+    if (!status || status.status === 'NOT_FOUND') {
         return (
             <div>Job not found</div>
         );
