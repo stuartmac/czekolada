@@ -52,7 +52,7 @@ export async function slivkaStatusCheck(jid) {
 
 }
 
-function pause(time) {
+export function pause(time) {
     return new Promise((resolve, reject) => {
         setTimeout(() => resolve(), time);
     });

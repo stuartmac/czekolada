@@ -1,7 +1,7 @@
 import React, {createContext, useState, useReducer, useEffect, useContext, useCallback, useMemo, useRef} from 'react';
 import {Container, Nav, Navbar, Form, Row, Col, Button, Table} from 'react-bootstrap';
 
-import {useRoutes, useParams, useNavigate, Outlet, Link} from 'react-router-dom';
+import {useParams, useNavigate, useActionData, Outlet, Link, Form as RRForm} from 'react-router-dom';
 
 import {slivka, slivkaStatusCheck} from './slivka';
 
@@ -15,7 +15,7 @@ function jobStatusReducer(jobStatusMap, updateStatus) {
     };
 }
 
-export default function App() {
+export default function App({children}) {
     const [serviceList, setServiceList] = useState({services: [], loading: true, err: null})
     const [jobStatusMap, updateJobStatus] = useReducer(jobStatusReducer, {}, () => {
         const jsStr = localStorage['czekolada.jobs'];
@@ -97,14 +97,14 @@ export default function App() {
     return (
         <SlivkaServiceContext.Provider value={serviceList}>
             <SlivkaJobCacheContext.Provider value={jobCache}>
-                <AppRoutes />
+                {children}
             </SlivkaJobCacheContext.Provider>
         </SlivkaServiceContext.Provider>
     )
 }
 
-function AppRoutes() {
-    const root = useRoutes([
+export function AppRoutes() {
+    const root = [
         {
             path: '/',
             element: <Root />,
@@ -120,7 +120,11 @@ function AppRoutes() {
                 },
                 {
                     path: '/services/:serviceId',
-                    element: <ServiceView />
+                    element: <ServiceView />,
+                    action: async (request) => {
+                        const formData = await request.request.formData();
+                        return {baseJob: formData.get('base_job')};
+                    } 
                 },
                 {
                     path: '/jobs',
@@ -132,7 +136,7 @@ function AppRoutes() {
                 }
             ]
         }
-    ]);
+    ];
     return root;
 }
 
@@ -171,7 +175,9 @@ function ServiceList() {
 
 function ServiceView(props) {
     const {serviceId} = useParams();
-    const {services, loading, err} = useContext(SlivkaServiceContext)
+    const {services, loading, err} = useContext(SlivkaServiceContext);
+    const {jobStatusMap} = useContext(SlivkaJobCacheContext);
+    const actionData = useActionData();
 
     const service = services.find((s) => s.id === serviceId);
 
@@ -181,7 +187,9 @@ function ServiceView(props) {
                 <h3>{service.name}</h3>
                 <p><i>{service.author}</i></p>
                 <p>{service.description}</p>
-                <ServiceLauncher service={service} key={serviceId} />
+                <ServiceLauncher service={service}
+                                 key={serviceId} 
+                                 baseParams={(jobStatusMap || {})[actionData?.baseJob]?.parameters} />
             </React.Fragment>
         )
     } else if (err) {
@@ -216,10 +224,17 @@ function serviceConfigReducer(config, {key, value, index=undefined}) {
     }
 }
 
-function serviceConfigInit(service) {
+function serviceConfigInit({service, baseParams={}}) {
     const config = {};
+
     for (const param of (service.parameters || [])) {
-        if (param.array) {
+        if (baseParams[param.id]) {
+            if (param.type === 'file') {
+                config[param.id] = {_slivkaFile: baseParams[param.id]}
+            } else {
+                config[param.id] = baseParams[param.id];
+            }
+        } else if (param.array) {
             if (param.required) {
                 config[param.id] = [undefined];
             } else {
@@ -341,17 +356,30 @@ function FileConfigControl({param, value, updateServiceConfig, isInvalid}) {
         updateServiceConfig({key: param.id, value: ev.target.files[0]})
     }, [param, updateServiceConfig]);
 
-    return (
-        <Form.Control type="file"
-                      isInvalid={isInvalid}
-                      onChange={onChange} />
-    );
+    const onRemove = useCallback((ev) => {
+        updateServiceConfig({key: param.id, value: undefined});
+    }, [param, updateServiceConfig]);
+
+    if (value?._slivkaFile) {
+        return (
+            <div>
+                Slivka file: {value._slivkaFile}
+                <Button onClick={onRemove}>Use another file</Button>
+            </div>
+        )
+    } else {
+        return (
+            <Form.Control type="file"
+                          isInvalid={isInvalid}
+                          onChange={onChange} />
+        );
+    }
 }
 
 function MultiConfigControl({param, value, updateServiceConfig, isInvalid, Control}) {
     const onAdd = useCallback(() => {
         updateServiceConfig({key: param.id, value: undefined, index: value.length})
-    }, [updateServiceConfig, value])
+    }, [updateServiceConfig, value, param])
 
     const controls = [];
     for (let i = 0; i < value.length; ++i) {
@@ -383,14 +411,18 @@ function configMapToFormData(service, config) {
                 }
             }
         } else {
-            formData.append(key, value);
+            if (value?._slivkaFile) {
+                formData.append(key, value._slivkaFile);
+            } else {
+                formData.append(key, value);
+            }
         }
     }
     return formData;
 }
 
-function ServiceLauncher({service}) {
-    const [serviceConfig, updateServiceConfig] = useReducer(serviceConfigReducer, service, serviceConfigInit);
+function ServiceLauncher({service, baseParams}) {
+    const [serviceConfig, updateServiceConfig] = useReducer(serviceConfigReducer, {service, baseParams}, serviceConfigInit);
     const [submitted, setSubmitted] = useState(false);
 
     const {updateJobStatus} = useContext(SlivkaJobCacheContext);
@@ -422,7 +454,7 @@ function ServiceLauncher({service}) {
             }
         })()
 
-    }, [service, serviceConfig]);
+    }, [service, serviceConfig, navigate, updateJobStatus]);
 
     function controlForParam(param, value, isInvalid) {
         let Control;
@@ -584,7 +616,7 @@ function JobView() {
         if (!status) {
             requestJob(jobId)
         }
-    }, [jobId, requestJob])
+    }, [jobId, requestJob, status])
 
 
     const service = useMemo(() => {
@@ -608,6 +640,10 @@ function JobView() {
                 <h3>Job {status.id}</h3>
                 <div>Run with: <Link to={`/services/${service.id}`}>{service.name}</Link></div>
                 <div>Status: {status.status}</div>
+                <RRForm method="post" action={`/services/${service.id}`}>
+                    <input type="hidden" name="base_job" value={jobId} />
+                    <Button as="input" type="submit" value="Run another job like this" />
+                </RRForm>
                 {status.finished ? <JobOutputView jobId={status.id} /> : undefined}
             </React.Fragment>
         );
@@ -652,7 +688,7 @@ function JobOutputView({jobId}) {
                 setJobFiles({error: err.message || err})
             }
         })();
-    }, []);
+    }, [jobId]);
 
     if (jobFiles === undefined) {
         return (
