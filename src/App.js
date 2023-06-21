@@ -404,6 +404,8 @@ function MultiConfigControl({param, value, updateServiceConfig, isInvalid, Contr
 function configMapToFormData(service, config) {
     const formData = new FormData();
     for (const [key, value] of Object.entries(config)) {
+        if (value === undefined || value === null) continue;
+
         if (value && value instanceof Array) {
             for (const vi of value) {
                 if (vi !== undefined) {
