@@ -642,6 +642,8 @@ function JobView() {
                 <h3>Job {status.id}</h3>
                 <div>Run with: <Link to={`/services/${service.id}`}>{service.name}</Link></div>
                 <div>Status: {status.status}</div>
+                {status.submissionTime ? <div>Submitted: {status.submissionTime}</div> : undefined}
+                {status.completionTime ? <div>Completed: {status.completionTime}</div> : undefined}
                 <RRForm method="post" action={`/services/${service.id}`}>
                     <input type="hidden" name="base_job" value={jobId} />
                     <Button as="input" type="submit" value="Run another job like this" />
