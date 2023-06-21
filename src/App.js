@@ -308,8 +308,9 @@ function ChoiceConfigControl({param, value, updateServiceConfig, isInvalid}) {
 
     return (
         <Form.Select value={value || '__czekolada_none__'}
-                     onChange={onChange}>
-            { param.required ? undefined : <option value="__czekolada_none__">-</option> }
+                     onChange={onChange}
+                     isInvalid={isInvalid}>
+            { (param.required  && value) ? undefined : <option value="__czekolada_none__">-</option> }
             { (param.choices || []).map((opt, i) => (
                 <option value={opt} key={i}>{opt}</option>
             )) }
