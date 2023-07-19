@@ -364,7 +364,7 @@ function FileConfigControl({param, value, updateServiceConfig, isInvalid}) {
     if (value?._slivkaFile) {
         return (
             <div>
-                Slivka file: {value._slivkaFile}
+                Slivka file: <a href={`/media/uploads/${value._slivkaFile}`} download>{value._slivkaFile}</a>
                 <Button onClick={onRemove}>Use another file</Button>
             </div>
         )
