@@ -56,7 +56,9 @@ export default function App({children}) {
     useEffect(() => {
         const interval = setInterval(() => {
             for (const job of Object.values(jobStatusRef.current || {})) {
-                if (!job.finished && job.status !== 'NOT_FOUND' && job.status !== 'COMMS_ERR') {
+                // FIXME we should back off polling COMMS_ERR, but not stop completely.  For now, we continue
+                // on the normal schedule.
+                if (!job.finished && job.status !== 'NOT_FOUND' /* && job.status !== 'COMMS_ERR' */) {
                     (async () => {
                         try {
                             const status = await slivkaStatusCheck(job.id);
