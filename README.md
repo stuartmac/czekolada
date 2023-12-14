@@ -6,6 +6,7 @@ jobs, developed by the CSB group.
 ## Development
 
     npm install
-    npm start
+    SLIVKA_URL=http://my.slivka.instance:4040 npm start
 
-Optionally, you can set `SLIVKA_URL` to point to a different Slivka instance.
+The `SLIVKA_URL` environment variable MUST be set, and should point to
+the base API-server URL of your Slivka installation.
