@@ -12,14 +12,16 @@ module.exports = function(app) {
         '/api',
         proxy.createProxyMiddleware({
             target: SLIVKA,
-            changeOrigin: true
+            changeOrigin: true,
+            prependPath: true
         })
     );
     app.use(
         '/media',
         proxy.createProxyMiddleware({
             target: SLIVKA,
-            changeOrigin: true
+            changeOrigin: true,
+            prependPath: true
         })
     );
 }
