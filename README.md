@@ -1,7 +1,7 @@
 # czekolada: a thin layer around Slivka
 
 Czekolada is a lightweight GUI for running Slivka services and inspecting
-jobs, developed by the CSB group at Genentech Inc.
+jobs, developed by the Computational Structural Biology (CSB) group at Genentech Inc.
 
 ## Development
 
