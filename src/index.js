@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import {createBrowserRouter, RouterProvider} from 'react-router-dom';
+import { ROUTER_BASENAME } from './config';
 
 import './index.css';
 import App, {AppRoutes} from './App';
@@ -8,7 +9,10 @@ import App, {AppRoutes} from './App';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const router = createBrowserRouter(
-  AppRoutes()
+  AppRoutes(),
+  {
+    basename: ROUTER_BASENAME
+  }
 );
 
 

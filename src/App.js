@@ -4,6 +4,7 @@ import {Container, Nav, Navbar, Form, Row, Col, Button, Table} from 'react-boots
 import {useParams, useNavigate, useActionData, Outlet, Link, Form as RRForm} from 'react-router-dom';
 
 import {slivka, slivkaStatusCheck} from './slivka';
+import { apiPath, mediaPath } from './config';
 
 const SlivkaServiceContext = createContext({services: [], loading: true, err: null});
 const SlivkaJobCacheContext = createContext();
@@ -34,7 +35,7 @@ export default function App({children}) {
     useEffect(() => {
         (async () => {
             try {
-                const resp = await fetch('/api/services');
+                const resp = await fetch(apiPath('/api/services'));
                 // const resp = await fetch('/services.json');
                 if (!resp.ok) throw Error(`${resp.statusText}`);
                 const data = await resp.json();
@@ -366,7 +367,7 @@ function FileConfigControl({param, value, updateServiceConfig, isInvalid}) {
     if (value?._slivkaFile) {
         return (
             <div>
-                Slivka file: <a href={`/media/uploads/${value._slivkaFile}`} download>{value._slivkaFile}</a>
+                Slivka file: <a href={mediaPath('/media/uploads/' + value._slivkaFile)} download>{value._slivkaFile}</a>
                 <Button onClick={onRemove}>Use another file</Button>
             </div>
         )
@@ -687,7 +688,7 @@ function JobOutputView({jobId}) {
     useEffect(() => {
         (async () => {
             try {
-                const response = await fetch(`/api/jobs/${jobId}/files`);
+                const response = await fetch(apiPath(`/api/jobs/${jobId}/files`));
                 if (!response.ok) throw Error(`${response.statusText}`);
                 const result = await response.json();
                 setJobFiles(result);
