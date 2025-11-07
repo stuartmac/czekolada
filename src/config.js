@@ -1,6 +1,8 @@
 // Central configuration for URL prefixing.
-// Supports build-time prefix via REACT_APP_URL_PREFIX and optional runtime override
-// through window.__URL_PREFIX. Empty or '/' means no prefix.
+// Supports separate prefixes for the app (router basename), API, and media.
+// Build-time via REACT_APP_BASENAME, REACT_APP_API_PREFIX, REACT_APP_MEDIA_PREFIX
+// Optional runtime override via window.__BASENAME, window.__API_PREFIX, window.__MEDIA_PREFIX
+// Empty or '/' means no prefix.
 
 function normalizePrefix(p) {
   if (!p) return '';
@@ -13,26 +15,40 @@ function normalizePrefix(p) {
   return p;
 }
 
-export const URL_PREFIX = normalizePrefix(process.env.REACT_APP_URL_PREFIX || (typeof window !== 'undefined' && window.__URL_PREFIX));
+// App basename (where the SPA is mounted), e.g. '/slivka/czekolada'
+export const APP_BASENAME = normalizePrefix(
+  process.env.REACT_APP_BASENAME || (typeof window !== 'undefined' && window.__BASENAME)
+);
 
-// Build API path under prefix
+// API prefix (where the backend API is mounted), e.g. '/slivka/api' (default '/api')
+export const API_PREFIX = normalizePrefix(
+  process.env.REACT_APP_API_PREFIX || (typeof window !== 'undefined' && window.__API_PREFIX) || '/api'
+);
+
+// Media prefix (where media files are served), e.g. '/slivka/media'
+const inferredMedia = API_PREFIX.endsWith('/api') ? API_PREFIX.slice(0, -4) + 'media' : '/media';
+export const MEDIA_PREFIX = normalizePrefix(
+  process.env.REACT_APP_MEDIA_PREFIX || (typeof window !== 'undefined' && window.__MEDIA_PREFIX) || inferredMedia
+);
+
+// Build API path under API_PREFIX. Path should be relative to API root (e.g. '/jobs/123').
 export function apiPath(path) {
-  // path expected to start with '/'
   if (!path.startsWith('/')) path = '/' + path;
-  return URL_PREFIX + path;
+  return API_PREFIX + path;
 }
 
+// Build media path under MEDIA_PREFIX. Path should be relative to media root (e.g. '/uploads/xyz').
 export function mediaPath(path) {
   if (!path.startsWith('/')) path = '/' + path;
-  return URL_PREFIX + path;
+  return MEDIA_PREFIX + path;
 }
 
-// Generic prefixer
-export function withPrefix(path) {
+// Prefix any app-relative path with the SPA basename
+export function withAppPrefix(path) {
   if (!path) return path;
   if (!path.startsWith('/')) path = '/' + path;
-  return URL_PREFIX + path;
+  return APP_BASENAME + path;
 }
 
 // For react-router basename usage
-export const ROUTER_BASENAME = URL_PREFIX || undefined;
+export const ROUTER_BASENAME = APP_BASENAME || undefined;
