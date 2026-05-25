@@ -1,10 +1,12 @@
+import { apiPath } from './config';
+
 export async function slivka(serviceName, formData, options={}) {
     if (typeof(options) === 'boolean') {
         options = {useCache: options};
     }
     const {statusCallback} = options;
 
-    const resp = await fetch(`/api/services/${serviceName}/jobs`, {
+    const resp = await fetch(apiPath(`/services/${serviceName}/jobs`), {
         method: 'POST',
         body: formData
     })
@@ -36,7 +38,7 @@ export async function slivka(serviceName, formData, options={}) {
 }
 
 export async function slivkaStatusCheck(jid) {
-    const resp = await fetch(`/api/jobs/${jid}`);
+    const resp = await fetch(apiPath(`/jobs/${jid}`));
     if (!resp.ok) {
         console.log('resp', resp);
         if (resp.status === 404) {
